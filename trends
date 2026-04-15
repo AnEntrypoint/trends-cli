@@ -1,41 +1,42 @@
 #!/usr/bin/env node
-const { chromium } = require('playwright');
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 async function fetchTrends(query) {
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
+  const tempScript = path.join(os.tmpdir(), `trends_${Date.now()}.js`);
+
+  const script = `
+const { fetchTrendsData } = require('./playwriter-trends.js');
+
+(async () => {
+  try {
+    const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(0);
+  } catch (err) {
+    console.error('Error:', err.message);
+    process.exit(1);
+  }
+})();
+`;
+
+  fs.writeFileSync(tempScript, script);
 
   try {
-    const queryParam = encodeURIComponent(query);
-    const url = `https://trends.google.com/trends/explore?q=${queryParam}`;
-
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 8000 });
-    await page.waitForTimeout(5000);
-
-    const data = await page.evaluate(() => {
-      const table = document.querySelector('table');
-      if (!table) return null;
-
-      const rows = Array.from(table.querySelectorAll('tr'));
-      return rows.slice(1).map(row => {
-        const cells = Array.from(row.querySelectorAll('td, th'));
-        if (cells.length < 2) return null;
-        return {
-          date: cells[0].textContent.trim(),
-          value: parseInt(cells[1].textContent.trim(), 10)
-        };
-      }).filter(Boolean);
+    const result = execSync(`playwriter "${tempScript}"`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    return {
-      query,
-      success: !!data && data.length > 0,
-      url,
-      timestamp: new Date().toISOString(),
-      data: data || []
-    };
+    return JSON.parse(result);
+  } catch (err) {
+    throw new Error(`Playwriter execution failed: ${err.message}`);
   } finally {
-    await browser.close();
+    try {
+      fs.unlinkSync(tempScript);
+    } catch {}
   }
 }
 
@@ -43,6 +44,10 @@ const query = process.argv[2];
 if (!query) {
   console.error('Usage: trends <query>');
   console.error('Example: trends "artificial intelligence"');
+  console.error('');
+  console.error('Requirements:');
+  console.error('  - playwriter CLI installed (npm install -g @remorses/playwriter)');
+  console.error('  - Browser window open with playwriter extension active');
   process.exit(1);
 }
 
