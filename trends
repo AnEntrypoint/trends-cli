@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+const { chromium } = require('playwright');
+
+async function fetchTrends(query) {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  try {
+    const queryParam = encodeURIComponent(query);
+    const url = `https://trends.google.com/trends/explore?q=${queryParam}`;
+
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 8000 });
+    await page.waitForTimeout(5000);
+
+    const data = await page.evaluate(() => {
+      const table = document.querySelector('table');
+      if (!table) return null;
+
+      const rows = Array.from(table.querySelectorAll('tr'));
+      return rows.slice(1).map(row => {
+        const cells = Array.from(row.querySelectorAll('td, th'));
+        if (cells.length < 2) return null;
+        return {
+          date: cells[0].textContent.trim(),
+          value: parseInt(cells[1].textContent.trim(), 10)
+        };
+      }).filter(Boolean);
+    });
+
+    return {
+      query,
+      success: !!data && data.length > 0,
+      url,
+      timestamp: new Date().toISOString(),
+      data: data || []
+    };
+  } finally {
+    await browser.close();
+  }
+}
+
+const query = process.argv[2];
+if (!query) {
+  console.error('Usage: trends <query>');
+  console.error('Example: trends "artificial intelligence"');
+  process.exit(1);
+}
+
+fetchTrends(query)
+  .then(result => {
+    console.log(JSON.stringify(result, null, 2));
+  })
+  .catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });

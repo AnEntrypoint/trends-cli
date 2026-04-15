@@ -11,34 +11,35 @@ This requires:
 
 ## Usage
 
-### Direct Playwriter Script
-Use playwriter to query trends directly:
+### CLI (Recommended)
 
-```javascript
-// In playwriter console
-const { fetchTrendsData } = await import('/path/to/playwriter-trends.js');
-const result = await fetchTrendsData('python', page);
-console.log(JSON.stringify(result, null, 2));
-```
-
-### Via CLI Script
+**Terminal 1 — Start the server:**
 ```bash
-# JSON output (default)
-node trends-cli.js "python" --output json
-
-# CSV output (for spreadsheets)
-node trends-cli.js "python" --output csv
-
-# Table format
-node trends-cli.js "python" --output table
+node trends-server.js
+# Output: Trends server listening on http://localhost:3847
 ```
 
-## Query Examples
+**Terminal 2 — In playwriter console (with browser open to any page):**
+```javascript
+global.trendsServer.setCachedPage(page);
+console.log('Page cached for CLI queries');
+```
 
+**Terminal 3 — Run CLI queries:**
 ```bash
 node trends-cli.js "artificial intelligence"
-node trends-cli.js "machine learning"
-node trends-cli.js "web development"
+node trends-cli.js "python" --output csv > trends_python.csv
+node trends-cli.js "machine learning" --output json
+```
+
+### Direct Playwriter (Alternative)
+
+For direct queries without CLI:
+
+```javascript
+const { fetchTrendsData } = require('./playwriter-trends.js');
+const result = await fetchTrendsData('python', page);
+console.log(JSON.stringify(result, null, 2));
 ```
 
 ## Output Format (JSON)
