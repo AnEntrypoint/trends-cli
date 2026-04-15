@@ -2,43 +2,6 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-
-async function fetchTrends(query) {
-  const tempScript = path.join(os.tmpdir(), `trends_${Date.now()}.js`);
-
-  const script = `
-const { fetchTrendsData } = require('./playwriter-trends.js');
-
-(async () => {
-  try {
-    const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
-    console.log(JSON.stringify(result, null, 2));
-    process.exit(0);
-  } catch (err) {
-    console.error('Error:', err.message);
-    process.exit(1);
-  }
-})();
-`;
-
-  fs.writeFileSync(tempScript, script);
-
-  try {
-    const result = execSync(`playwriter "${tempScript}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-
-    return JSON.parse(result);
-  } catch (err) {
-    throw new Error(`Playwriter execution failed: ${err.message}`);
-  } finally {
-    try {
-      fs.unlinkSync(tempScript);
-    } catch {}
-  }
-}
 
 const query = process.argv[2];
 if (!query) {
@@ -51,11 +14,78 @@ if (!query) {
   process.exit(1);
 }
 
-fetchTrends(query)
-  .then(result => {
+const repoDir = __dirname;
+const modulePath = path.join(repoDir, 'playwriter-trends.js');
+const tmpDir = require('os').tmpdir();
+const tempFile = path.join(tmpDir, `trends-${Date.now()}.js`);
+
+if (!fs.existsSync(modulePath)) {
+  console.error(`Error: playwriter-trends.js not found at ${modulePath}`);
+  process.exit(1);
+}
+
+const script = `
+const { fetchTrendsData } = require('${modulePath.replace(/\\/g, '\\\\')}');
+
+(async () => {
+  try {
+    const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
     console.log(JSON.stringify(result, null, 2));
-  })
-  .catch(err => {
-    console.error('Error:', err.message);
+  } catch (err) {
+    console.error('TrendsError:', err.message);
     process.exit(1);
+  }
+})();
+`;
+
+try {
+  // Write script to temp file
+  fs.writeFileSync(tempFile, script, 'utf8');
+
+  const output = execSync(`playwriter "${tempFile}"`, {
+    encoding: 'utf8',
+    stdio: 'pipe'
   });
+
+  const lines = output.split('\n');
+  let jsonOutput = '';
+  let foundJson = false;
+
+  for (const line of lines) {
+    if (line.trim().startsWith('{')) {
+      foundJson = true;
+    }
+    if (foundJson) {
+      jsonOutput += line + '\n';
+    }
+  }
+
+  if (jsonOutput.trim()) {
+    const result = JSON.parse(jsonOutput);
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.error('Error: No JSON output from playwriter');
+    console.error('Raw output:', output);
+    process.exit(1);
+  }
+} catch (err) {
+  if (err.message.includes('TrendsError')) {
+    console.error(err.message);
+  } else {
+    console.error('Playwriter error:', err.message);
+    console.error('Make sure:');
+    console.error('  1. playwriter CLI is running: playwriter');
+    console.error('  2. Browser window is open with extension active');
+    console.error('  3. playwriter-trends.js is in the same directory');
+  }
+  process.exit(1);
+} finally {
+  // Clean up temp file
+  try {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+  } catch (cleanupErr) {
+    // Silently ignore cleanup errors
+  }
+}
