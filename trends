@@ -16,6 +16,8 @@ if (!query) {
 
 const repoDir = __dirname;
 const modulePath = path.join(repoDir, 'playwriter-trends.js');
+const tmpDir = require('os').tmpdir();
+const tempFile = path.join(tmpDir, `trends-${Date.now()}.js`);
 
 if (!fs.existsSync(modulePath)) {
   console.error(`Error: playwriter-trends.js not found at ${modulePath}`);
@@ -30,7 +32,13 @@ try {
       encoding: 'utf8',
       stdio: 'pipe'
     }).trim();
-    sessionId = sessionOutput.split('\n').pop().trim();
+
+    // Extract session ID from output like "Session 57 created. Use with: playwriter -s 57 -e "...""
+    const match = sessionOutput.match(/Session\s+(\d+)\s+created/);
+    if (!match) {
+      throw new Error('Could not parse session ID from output: ' + sessionOutput);
+    }
+    sessionId = match[1];
   } catch (err) {
     console.error('Error: Could not create playwriter session');
     console.error('Make sure:');
@@ -39,30 +47,40 @@ try {
     process.exit(1);
   }
 
-  // Step 2: Build the eval code that will be executed in the session
+  // Step 2: Build and write the eval code to a temporary file
   const evalCode = `
 const { fetchTrendsData } = require('${modulePath.replace(/\\/g, '\\\\')}');
 const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
 console.log(JSON.stringify(result, null, 2));
 `;
 
-  // Step 3: Execute the code via playwriter
-  const output = execSync(`playwriter -s ${sessionId} -e "${evalCode.replace(/"/g, '\\"')}"`, {
+  fs.writeFileSync(tempFile, evalCode, 'utf8');
+
+  // Step 3: Execute the code via playwriter using the file
+  // Read the code from file to pass via -e to avoid shell parsing issues
+  const fileContent = fs.readFileSync(tempFile, 'utf8');
+  const output = execSync(`playwriter -s ${sessionId} -e "${fileContent.replace(/"/g, '\\"').replace(/\$/g, '\\$')}"`, {
     encoding: 'utf8',
-    stdio: 'pipe'
+    stdio: 'pipe',
+    shell: true
   });
 
   // Step 4: Parse output for JSON
+  // Playwriter wraps console output as "[log] <output>"
   const lines = output.split('\n');
   let jsonOutput = '';
-  let foundJson = false;
 
   for (const line of lines) {
-    if (line.trim().startsWith('{')) {
-      foundJson = true;
-    }
-    if (foundJson) {
-      jsonOutput += line + '\n';
+    // Look for lines with [log] prefix or direct JSON
+    const trimmed = line.trim();
+    if (trimmed.startsWith('[log] {')) {
+      // Extract JSON from "[log] {...}"
+      jsonOutput = trimmed.substring(6); // Remove "[log] "
+      break;
+    } else if (trimmed.startsWith('{')) {
+      // Direct JSON line
+      jsonOutput = trimmed;
+      break;
     }
   }
 
@@ -87,4 +105,13 @@ console.log(JSON.stringify(result, null, 2));
   console.error('  2. Browser window is open with playwriter extension active');
   console.error('  3. playwriter-trends.js is in the same directory');
   process.exit(1);
+} finally {
+  // Clean up temporary file
+  try {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+  } catch (cleanupErr) {
+    // Silently ignore cleanup errors
+  }
 }
