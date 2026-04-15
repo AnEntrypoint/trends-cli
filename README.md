@@ -13,13 +13,15 @@ chmod +x trends
 
 ## Usage
 
-**Start playwriter with browser open:**
+**Terminal 1 - Start playwriter relay server:**
 ```bash
-playwriter
-# Browser window opens with playwriter extension active
+playwriter serve
 ```
 
-**In another terminal, run queries:**
+**Terminal 2 - Open browser with playwriter extension active:**
+Open Chrome/Brave/Edge with the playwriter extension, navigate to any page.
+
+**Terminal 3 - Run queries:**
 ```bash
 ./trends "artificial intelligence"
 ./trends "python"
@@ -53,5 +55,7 @@ playwriter
 ## Requirements
 
 - Node.js 14+
-- @remorses/playwriter CLI installed globally
-- Browser window with playwriter extension active
+- @remorses/playwriter CLI installed globally: `npm install -g @remorses/playwriter`
+- Chrome/Brave/Edge with playwriter extension installed
+- `playwriter serve` running (relay server)
+- Browser with playwriter extension active on any page
