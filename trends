@@ -16,37 +16,43 @@ if (!query) {
 
 const repoDir = __dirname;
 const modulePath = path.join(repoDir, 'playwriter-trends.js');
-const tmpDir = require('os').tmpdir();
-const tempFile = path.join(tmpDir, `trends-${Date.now()}.js`);
 
 if (!fs.existsSync(modulePath)) {
   console.error(`Error: playwriter-trends.js not found at ${modulePath}`);
   process.exit(1);
 }
 
-const script = `
-const { fetchTrendsData } = require('${modulePath.replace(/\\/g, '\\\\')}');
-
-(async () => {
+try {
+  // Step 1: Create a new playwriter session
+  let sessionId;
   try {
-    const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
-    console.log(JSON.stringify(result, null, 2));
+    const sessionOutput = execSync('playwriter session new', {
+      encoding: 'utf8',
+      stdio: 'pipe'
+    }).trim();
+    sessionId = sessionOutput.split('\n').pop().trim();
   } catch (err) {
-    console.error('TrendsError:', err.message);
+    console.error('Error: Could not create playwriter session');
+    console.error('Make sure:');
+    console.error('  1. playwriter serve is running on your machine');
+    console.error('  2. Browser window is open with playwriter extension active');
     process.exit(1);
   }
-})();
+
+  // Step 2: Build the eval code that will be executed in the session
+  const evalCode = `
+const { fetchTrendsData } = require('${modulePath.replace(/\\/g, '\\\\')}');
+const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
+console.log(JSON.stringify(result, null, 2));
 `;
 
-try {
-  // Write script to temp file
-  fs.writeFileSync(tempFile, script, 'utf8');
-
-  const output = execSync(`playwriter "${tempFile}"`, {
+  // Step 3: Execute the code via playwriter
+  const output = execSync(`playwriter -s ${sessionId} -e "${evalCode.replace(/"/g, '\\"')}"`, {
     encoding: 'utf8',
     stdio: 'pipe'
   });
 
+  // Step 4: Parse output for JSON
   const lines = output.split('\n');
   let jsonOutput = '';
   let foundJson = false;
@@ -61,31 +67,24 @@ try {
   }
 
   if (jsonOutput.trim()) {
-    const result = JSON.parse(jsonOutput);
-    console.log(JSON.stringify(result, null, 2));
+    try {
+      const result = JSON.parse(jsonOutput);
+      console.log(JSON.stringify(result, null, 2));
+    } catch (parseErr) {
+      console.error('Error: Could not parse JSON output');
+      console.error('Raw output:', output);
+      process.exit(1);
+    }
   } else {
     console.error('Error: No JSON output from playwriter');
     console.error('Raw output:', output);
     process.exit(1);
   }
 } catch (err) {
-  if (err.message.includes('TrendsError')) {
-    console.error(err.message);
-  } else {
-    console.error('Playwriter error:', err.message);
-    console.error('Make sure:');
-    console.error('  1. playwriter CLI is running: playwriter');
-    console.error('  2. Browser window is open with extension active');
-    console.error('  3. playwriter-trends.js is in the same directory');
-  }
+  console.error('Playwriter error:', err.message);
+  console.error('Make sure:');
+  console.error('  1. playwriter serve is running: playwriter serve');
+  console.error('  2. Browser window is open with playwriter extension active');
+  console.error('  3. playwriter-trends.js is in the same directory');
   process.exit(1);
-} finally {
-  // Clean up temp file
-  try {
-    if (fs.existsSync(tempFile)) {
-      fs.unlinkSync(tempFile);
-    }
-  } catch (cleanupErr) {
-    // Silently ignore cleanup errors
-  }
 }
