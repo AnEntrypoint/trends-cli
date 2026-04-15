@@ -1,0 +1,56 @@
+- id: verify-playwriter-setup
+  subject: Verify playwriter MCP is connected and accessible
+  status: completed
+  description: Confirm playwriter tool is available and working via MCP
+  effort: small
+  category: infra
+  blockedBy: undefined
+  acceptance:
+    - Playwriter MCP connection verified
+    - Can execute browser commands
+
+- id: script-trends-navigation
+  subject: Create playwriter script to navigate trends.google.com
+  status: completed
+  description: Use playwriter to visit trends.google.com and navigate to search queries
+  effort: medium
+  category: feature
+  blockedBy: ["verify-playwriter-setup"]
+  acceptance:
+    - Script successfully navigates to trends.google.com
+    - Can interact with search input
+
+- id: extract-trends-data
+  subject: Extract trends data from page DOM
+  status: completed
+  description: Use playwriter page.evaluate() to extract search trends, charts, related queries
+  effort: medium
+  category: feature
+  blockedBy: ["script-trends-navigation"]
+  acceptance:
+    - Data extracted in structured format (JSON)
+    - Includes search volume, time series, related terms
+
+- id: create-cli-script
+  subject: Create CLI wrapper script for trends queries
+  status: completed
+  description: Build executable CLI script (bash/node) that runs playwriter automation and outputs results
+  effort: medium
+  category: feature
+  blockedBy: ["extract-trends-data"]
+  acceptance:
+    - CLI script executable
+    - Accepts search query as argument
+    - Outputs JSON or formatted results
+
+- id: document-cli
+  subject: Document CLI usage per playwriter README pattern
+  status: completed
+  description: Write setup and usage documentation matching playwriter conventions
+  effort: small
+  category: infra
+  blockedBy: ["create-cli-script"]
+  acceptance:
+    - README explains usage
+    - Example commands shown
+    - Installation steps clear
