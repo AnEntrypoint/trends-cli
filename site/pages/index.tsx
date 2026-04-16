@@ -2,38 +2,33 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 const B = { tl: '╭', tr: '╮', bl: '╰', br: '╯', h: '─', v: '│' };
+const W = 56;
 
 function Box({ title, children, accent = 'text-[#7aa2f7]' }: { title?: string; children: React.ReactNode; accent?: string }) {
+  const fill = title ? Math.max(0, W - title.length - 3) : W;
   return (
     <div className="my-4">
-      <div className={accent}>
-        {B.tl}{title ? `${B.h}${B.h} ${title} ` : ''}{B.h.repeat(title ? Math.max(0, 52 - title.length) : 56)}{B.tr}
-      </div>
+      <div className={accent}>{B.tl}{title ? `${B.h} ${title} ` : ''}{B.h.repeat(fill)}{B.tr}</div>
       <div>{children}</div>
-      <div className={accent}>
-        {B.bl}{B.h.repeat(56)}{B.br}
-      </div>
+      <div className={accent}>{B.bl}{B.h.repeat(W)}{B.br}</div>
     </div>
   );
 }
 
-function Line({ prompt, cmd, flag, args, dim }: { prompt?: string; cmd?: string; flag?: string; args?: string; dim?: boolean }) {
+function R({ children }: { children: React.ReactNode }) {
   return (
-    <div className={dim ? 'text-[#565f89]' : ''}>
+    <div>
       <span className="text-[#7aa2f7]">{B.v}</span>
-      {' '}
-      {prompt && <span className="text-[#9ece6a]">{prompt}</span>}
-      {cmd && <span className="text-[#c0caf5]">{cmd}</span>}
-      {flag && <span className="text-[#bb9af7]">{flag}</span>}
-      {args && <span className="text-[#e0af68]">{args}</span>}
+      {' '}{children}
       <span className="float-right text-[#7aa2f7]">{B.v}</span>
     </div>
   );
 }
 
-function EmptyLine() {
-  return <div><span className="text-[#7aa2f7]">{B.v}</span><span className="float-right text-[#7aa2f7]">{B.v}</span></div>;
-}
+const G = ({ children }: { children: React.ReactNode }) => <span className="text-[#9ece6a]">{children}</span>;
+const P = ({ children }: { children: React.ReactNode }) => <span className="text-[#bb9af7]">{children}</span>;
+const A = ({ children }: { children: React.ReactNode }) => <span className="text-[#e0af68]">{children}</span>;
+const D = ({ children }: { children: React.ReactNode }) => <span className="text-[#565f89]">{children}</span>;
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -78,74 +73,73 @@ export default function Home() {
             <span className="text-[#565f89] ml-2">~/trends-cli</span>
           </div>
           <div>
-            <span className="text-[#9ece6a]">$ </span>
-            <span className="text-[#c0caf5]">{typed}</span>
+            <G>$ </G>
+            <span>{typed}</span>
             {typed.length < full.length && <span className="text-[#7aa2f7] animate-pulse">█</span>}
           </div>
         </div>
 
         <Box title="What is this?" accent="text-[#9ece6a]">
-          <Line prompt="  " cmd="Atomic CLI for Google Trends data." />
-          <Line prompt="  " cmd="One command. Real data. Pure JSON." />
-          <EmptyLine />
-          <Line prompt="  " cmd="Uses " flag="playwriter" args=" browser automation" />
-          <Line prompt="  " cmd="to scrape trends.google.com directly." />
-          <Line prompt="  " cmd="No API keys. No auth. No config." />
+          <R><span>Atomic CLI for Google Trends data.</span></R>
+          <R><span>One command. Real data. Pure JSON.</span></R>
+          <R><span>&nbsp;</span></R>
+          <R><span>Uses <P>playwriter</P> <A>browser automation</A></span></R>
+          <R><span>to scrape trends.google.com directly.</span></R>
+          <R><span>No API keys. No auth. No config.</span></R>
         </Box>
 
         <Box title="Install">
-          <Line prompt="  $ " cmd="npm install -g " flag="@remorses/playwriter" />
-          <Line prompt="  $ " cmd="git clone " args="https://github.com/AnEntrypoint/trends-cli" />
-          <Line prompt="  $ " cmd="cd trends-cli && chmod +x trends" />
+          <R><G>$ </G>npm install -g <P>@remorses/playwriter</P></R>
+          <R><G>$ </G>git clone <A>https://github.com/AnEntrypoint/trends-cli</A></R>
+          <R><G>$ </G>cd trends-cli && chmod +x trends</R>
         </Box>
 
         <Box title="Usage">
-          <Line prompt="  $ " cmd="./trends " args={'"artificial intelligence"'} />
-          <Line prompt="  $ " cmd="./trends " args={'"python"'} flag=" --geo " args="US" />
-          <Line prompt="  $ " cmd="./trends " args={'"golang"'} flag=" --time " args={'"today 12-m"'} />
-          <Line prompt="  $ " cmd="./trends " args={'"rust"'} flag=" --csv" />
-          <Line prompt="  $ " cmd="./trends " args={'"python,golang,rust"'} />
+          <R><G>$ </G>./trends <A>{'"artificial intelligence"'}</A></R>
+          <R><G>$ </G>./trends <A>{'"python"'}</A> <P>--geo</P> <A>US</A></R>
+          <R><G>$ </G>./trends <A>{'"golang"'}</A> <P>--time</P> <A>{'"today 12-m"'}</A></R>
+          <R><G>$ </G>./trends <A>{'"rust"'}</A> <P>--csv</P></R>
+          <R><G>$ </G>./trends <A>{'"python,golang,rust"'}</A></R>
         </Box>
 
         <Box title="Flags" accent="text-[#bb9af7]">
-          <Line prompt="  " flag="--geo " cmd="<code>  " args="Region filter (US, GB, DE, ...)" />
-          <Line prompt="  " flag="--time " cmd="<range> " args="Time range (today 12-m, ...)" />
-          <Line prompt="  " flag="--csv " cmd="        " args="Output CSV instead of JSON" />
-          <Line prompt="  " flag="--help" cmd="         " args="Show help" />
+          <R><P>--geo </P>{'<code>   '}<A>Region filter (US, GB, DE, ...)</A></R>
+          <R><P>--time </P>{'<range>  '}<A>Time range (today 12-m, ...)</A></R>
+          <R><P>--csv </P>{'         '}<A>Output CSV instead of JSON</A></R>
+          <R><P>--help</P>{'         '}<A>Show help</A></R>
         </Box>
 
         <Box title="Output" accent="text-[#e0af68]">
-          <div className="text-[#7aa2f7]">{B.v}</div>
-          <pre className="text-[#9ece6a] pl-4 pr-4">{`  {
-    "query": "artificial intelligence",
-    "success": true,
-    "geo": "worldwide",
-    "timeSeriesData": [
-      { "date": "Apr 13, 2025", "value": 23 },
-      { "date": "Apr 20, 2025", "value": 24 }
-    ],
-    "relatedQueries": [...],
-    "risingTopics": [...]
-  }`}</pre>
+          <pre className="text-[#9ece6a] px-2">{`│  {
+│    "query": "artificial intelligence",
+│    "success": true,
+│    "geo": "worldwide",
+│    "timeSeriesData": [
+│      { "date": "Apr 13, 2025", "value": 23 },
+│      { "date": "Apr 20, 2025", "value": 24 }
+│    ],
+│    "relatedQueries": [...],
+│    "risingTopics": [...]
+│  }`}</pre>
         </Box>
 
         <Box title="Features">
-          <Line prompt="  " cmd="[" flag="x" cmd="] Single command execution" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] Structured JSON output" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] CSV export with --csv" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] Region filtering with --geo" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] Time range with --time" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] Related queries extraction" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] Rising topics extraction" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] Exponential backoff retry" />
-          <Line prompt="  " cmd="[" flag="x" cmd="] No API keys required" />
+          <R><span> [<P>x</P>] Single command execution</span></R>
+          <R><span> [<P>x</P>] Structured JSON output</span></R>
+          <R><span> [<P>x</P>] CSV export with --csv</span></R>
+          <R><span> [<P>x</P>] Region filtering with --geo</span></R>
+          <R><span> [<P>x</P>] Time range with --time</span></R>
+          <R><span> [<P>x</P>] Related queries extraction</span></R>
+          <R><span> [<P>x</P>] Rising topics extraction</span></R>
+          <R><span> [<P>x</P>] Exponential backoff retry</span></R>
+          <R><span> [<P>x</P>] No API keys required</span></R>
         </Box>
 
         <Box title="Requirements" accent="text-[#f7768e]">
-          <Line prompt="  " flag="→ " cmd="Node.js 14+" />
-          <Line prompt="  " flag="→ " cmd="@remorses/playwriter CLI" />
-          <Line prompt="  " flag="→ " cmd="Chrome/Brave/Edge + playwriter extension" />
-          <Line prompt="  " flag="→ " cmd="playwriter serve running" />
+          <R><P>→ </P>Node.js 14+</R>
+          <R><P>→ </P>@remorses/playwriter CLI</R>
+          <R><P>→ </P>Chrome/Brave/Edge + playwriter extension</R>
+          <R><P>→ </P>playwriter serve running</R>
         </Box>
 
         <div className="text-center mt-8 mb-4 space-y-2">
@@ -153,13 +147,13 @@ export default function Home() {
             <a href="https://github.com/AnEntrypoint/trends-cli" className="text-[#7aa2f7] hover:text-[#bb9af7] transition-colors">
               {'['} GitHub {']'}
             </a>
-            <span className="text-[#565f89] mx-4">{'│'}</span>
-            <span className="text-[#565f89]">MIT License</span>
-            <span className="text-[#565f89] mx-4">{'│'}</span>
-            <span className="text-[#565f89]">AnEntrypoint</span>
+            <span className="text-[#565f89] mx-4">│</span>
+            <D>MIT License</D>
+            <span className="text-[#565f89] mx-4">│</span>
+            <D>AnEntrypoint</D>
           </div>
           <div className="text-[#565f89] text-xs cursor-blink">
-            <span className="text-[#9ece6a]">$ </span>_
+            <G>$ </G>_
           </div>
         </div>
       </div>
