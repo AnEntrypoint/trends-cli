@@ -1,237 +1,166 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
+const B = { tl: '╭', tr: '╮', bl: '╰', br: '╯', h: '─', v: '│' };
+
+function Box({ title, children, accent = 'text-[#7aa2f7]' }: { title?: string; children: React.ReactNode; accent?: string }) {
+  return (
+    <div className="my-4">
+      <div className={accent}>
+        {B.tl}{title ? `${B.h}${B.h} ${title} ` : ''}{B.h.repeat(title ? Math.max(0, 52 - title.length) : 56)}{B.tr}
+      </div>
+      <div>{children}</div>
+      <div className={accent}>
+        {B.bl}{B.h.repeat(56)}{B.br}
+      </div>
+    </div>
+  );
+}
+
+function Line({ prompt, cmd, flag, args, dim }: { prompt?: string; cmd?: string; flag?: string; args?: string; dim?: boolean }) {
+  return (
+    <div className={dim ? 'text-[#565f89]' : ''}>
+      <span className="text-[#7aa2f7]">{B.v}</span>
+      {' '}
+      {prompt && <span className="text-[#9ece6a]">{prompt}</span>}
+      {cmd && <span className="text-[#c0caf5]">{cmd}</span>}
+      {flag && <span className="text-[#bb9af7]">{flag}</span>}
+      {args && <span className="text-[#e0af68]">{args}</span>}
+      <span className="float-right text-[#7aa2f7]">{B.v}</span>
+    </div>
+  );
+}
+
+function EmptyLine() {
+  return <div><span className="text-[#7aa2f7]">{B.v}</span><span className="float-right text-[#7aa2f7]">{B.v}</span></div>;
+}
+
 export default function Home() {
-  const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [typed, setTyped] = useState('');
+  const full = './trends "artificial intelligence"';
 
   useEffect(() => {
     setMounted(true);
-    const dark = localStorage.getItem('theme') === 'dark' ||
-                 (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    setIsDark(dark);
-    updateTheme(dark);
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      setTyped(full.slice(0, i));
+      if (i >= full.length) clearInterval(iv);
+    }, 50);
+    return () => clearInterval(iv);
   }, []);
-
-  const updateTheme = (dark: boolean) => {
-    if (dark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
-  };
-
-  const toggleTheme = () => {
-    const newDark = !isDark;
-    setIsDark(newDark);
-    updateTheme(newDark);
-  };
 
   if (!mounted) return null;
 
   return (
     <>
       <Head>
-        <title>Trends CLI - Atomic Google Trends Lookups</title>
-        <meta name="description" content="Single-command CLI tool for fetching Google Trends data atomically" />
+        <title>trends-cli</title>
+        <meta name="description" content="Atomic CLI for Google Trends lookups" />
       </Head>
 
-      <div className={isDark ? 'dark' : ''}>
-        <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white transition-colors">
-          {/* Navigation */}
-          <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-950/80 backdrop-blur z-50 border-b border-gray-200 dark:border-gray-800">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl">📈</span>
-                <span className="font-bold text-xl">Trends CLI</span>
-              </div>
-              <div className="flex items-center space-x-6">
-                <a href="#features" className="hover:text-blue-600 dark:hover:text-blue-400 transition">Features</a>
-                <a href="#usage" className="hover:text-blue-600 dark:hover:text-blue-400 transition">Usage</a>
-                <a href="https://github.com/AnEntrypoint/trends-cli" className="hover:text-blue-600 dark:hover:text-blue-400 transition">GitHub</a>
-                <button onClick={toggleTheme} className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700">
-                  {isDark ? '☀️' : '🌙'}
-                </button>
-              </div>
-            </div>
-          </nav>
+      <div className="min-h-screen bg-[#1a1b26] text-[#c0caf5] font-mono text-sm p-4 max-w-3xl mx-auto">
 
-          {/* Hero */}
-          <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl sm:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                Trends CLI
-              </h1>
-              <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-400 mb-8">
-                Atomic command-line tool for Google Trends lookups
-              </p>
-              <p className="text-lg text-gray-500 dark:text-gray-500 mb-12">
-                One command. Pure JSON. Full platform support.
-              </p>
+        <div className="text-center my-8">
+          <pre className="text-[#7aa2f7] text-xs sm:text-sm leading-tight inline-block text-left">{`
+  ╔╦╗╦═╗╔═╗╔╗╔╔╦╗╔═╗  ╔═╗╦  ╦
+   ║ ╠╦╝║╣ ║║║ ║║╚═╗  ║  ║  ║
+   ╩ ╩╚═╚═╝╝╚╝═╩╝╚═╝  ╚═╝╩═╝╩`}</pre>
+          <p className="text-[#565f89] mt-2">v1.0.0</p>
+        </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <button className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition" onClick={() => document.getElementById('usage')?.scrollIntoView({ behavior: 'smooth' })}>
-                  Get Started
-                </button>
-                <a href="https://github.com/AnEntrypoint/trends-cli" className="px-8 py-4 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">
-                  View on GitHub
-                </a>
-              </div>
+        <div className="border border-[#33467c] rounded p-4 mb-6 bg-[#1a1b26]">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-3 h-3 rounded-full bg-[#f7768e] inline-block" />
+            <span className="w-3 h-3 rounded-full bg-[#e0af68] inline-block" />
+            <span className="w-3 h-3 rounded-full bg-[#9ece6a] inline-block" />
+            <span className="text-[#565f89] ml-2">~/trends-cli</span>
+          </div>
+          <div>
+            <span className="text-[#9ece6a]">$ </span>
+            <span className="text-[#c0caf5]">{typed}</span>
+            {typed.length < full.length && <span className="text-[#7aa2f7] animate-pulse">█</span>}
+          </div>
+        </div>
 
-              {/* Feature Chips */}
-              <div className="flex flex-wrap justify-center gap-3">
-                <span className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">⚡ Atomic</span>
-                <span className="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">📊 Real Data</span>
-                <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">🔧 JSON Output</span>
-                <span className="px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium">🚀 Fast</span>
-              </div>
-            </div>
-          </section>
+        <Box title="What is this?" accent="text-[#9ece6a]">
+          <Line prompt="  " cmd="Atomic CLI for Google Trends data." />
+          <Line prompt="  " cmd="One command. Real data. Pure JSON." />
+          <EmptyLine />
+          <Line prompt="  " cmd="Uses " flag="playwriter" args=" browser automation" />
+          <Line prompt="  " cmd="to scrape trends.google.com directly." />
+          <Line prompt="  " cmd="No API keys. No auth. No config." />
+        </Box>
 
-          {/* Features */}
-          <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-4xl font-bold text-center mb-16">Features</h2>
+        <Box title="Install">
+          <Line prompt="  $ " cmd="npm install -g " flag="@remorses/playwriter" />
+          <Line prompt="  $ " cmd="git clone " args="https://github.com/AnEntrypoint/trends-cli" />
+          <Line prompt="  $ " cmd="cd trends-cli && chmod +x trends" />
+        </Box>
 
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="text-3xl mb-4">🎯</div>
-                  <h3 className="text-xl font-bold mb-2">Single Command</h3>
-                  <p className="text-gray-600 dark:text-gray-400">One executable. Zero configuration. Pure simplicity.</p>
-                </div>
+        <Box title="Usage">
+          <Line prompt="  $ " cmd="./trends " args={'"artificial intelligence"'} />
+          <Line prompt="  $ " cmd="./trends " args={'"python"'} flag=" --geo " args="US" />
+          <Line prompt="  $ " cmd="./trends " args={'"golang"'} flag=" --time " args={'"today 12-m"'} />
+          <Line prompt="  $ " cmd="./trends " args={'"rust"'} flag=" --csv" />
+          <Line prompt="  $ " cmd="./trends " args={'"python,golang,rust"'} />
+        </Box>
 
-                <div className="p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="text-3xl mb-4">📈</div>
-                  <h3 className="text-xl font-bold mb-2">Real Trends Data</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Fetches directly from trends.google.com atomically.</p>
-                </div>
+        <Box title="Flags" accent="text-[#bb9af7]">
+          <Line prompt="  " flag="--geo " cmd="<code>  " args="Region filter (US, GB, DE, ...)" />
+          <Line prompt="  " flag="--time " cmd="<range> " args="Time range (today 12-m, ...)" />
+          <Line prompt="  " flag="--csv " cmd="        " args="Output CSV instead of JSON" />
+          <Line prompt="  " flag="--help" cmd="         " args="Show help" />
+        </Box>
 
-                <div className="p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="text-3xl mb-4">📦</div>
-                  <h3 className="text-xl font-bold mb-2">JSON Output</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Structured data: query, success, url, timestamp, data.</p>
-                </div>
+        <Box title="Output" accent="text-[#e0af68]">
+          <div className="text-[#7aa2f7]">{B.v}</div>
+          <pre className="text-[#9ece6a] pl-4 pr-4">{`  {
+    "query": "artificial intelligence",
+    "success": true,
+    "geo": "worldwide",
+    "timeSeriesData": [
+      { "date": "Apr 13, 2025", "value": 23 },
+      { "date": "Apr 20, 2025", "value": 24 }
+    ],
+    "relatedQueries": [...],
+    "risingTopics": [...]
+  }`}</pre>
+        </Box>
 
-                <div className="p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="text-3xl mb-4">📱</div>
-                  <h3 className="text-xl font-bold mb-2">Platform Support</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Linux, macOS, Windows. Node.js + Playwright.</p>
-                </div>
+        <Box title="Features">
+          <Line prompt="  " cmd="[" flag="x" cmd="] Single command execution" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] Structured JSON output" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] CSV export with --csv" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] Region filtering with --geo" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] Time range with --time" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] Related queries extraction" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] Rising topics extraction" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] Exponential backoff retry" />
+          <Line prompt="  " cmd="[" flag="x" cmd="] No API keys required" />
+        </Box>
 
-                <div className="p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="text-3xl mb-4">🚀</div>
-                  <h3 className="text-xl font-bold mb-2">Fast Execution</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Launches browser, fetches, extracts, returns. ~10s.</p>
-                </div>
+        <Box title="Requirements" accent="text-[#f7768e]">
+          <Line prompt="  " flag="→ " cmd="Node.js 14+" />
+          <Line prompt="  " flag="→ " cmd="@remorses/playwriter CLI" />
+          <Line prompt="  " flag="→ " cmd="Chrome/Brave/Edge + playwriter extension" />
+          <Line prompt="  " flag="→ " cmd="playwriter serve running" />
+        </Box>
 
-                <div className="p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="text-3xl mb-4">🔒</div>
-                  <h3 className="text-xl font-bold mb-2">No Auth Required</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Uses public trends.google.com. No API keys.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Usage */}
-          <section id="usage" className="py-20 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-4xl font-bold mb-12">Usage</h2>
-
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-2xl font-bold mb-4">Installation</h3>
-                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
-                    <p>$ npm install -g @remorses/playwriter</p>
-                    <p>$ git clone https://github.com/AnEntrypoint/trends-cli.git</p>
-                    <p>$ cd trends-cli && chmod +x trends</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-2xl font-bold mb-4">Basic Usage</h3>
-                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm overflow-x-auto">
-                    <p>$ ./trends "artificial intelligence"</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-2xl font-bold mb-4">With Options</h3>
-                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
-                    <p>$ ./trends "python" --geo US</p>
-                    <p>$ ./trends "golang" --time "today 12-m" --csv</p>
-                    <p>$ ./trends "python,golang,rust"</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-2xl font-bold mb-4">Output</h3>
-                  <div className="bg-gray-900 dark:bg-gray-950 text-blue-400 p-6 rounded-lg font-mono text-sm overflow-x-auto">
-                    <pre>{`{
-  "query": "artificial intelligence",
-  "success": true,
-  "geo": "worldwide",
-  "url": "https://trends.google.com/trends/explore?q=...",
-  "timestamp": "2026-04-15T...",
-  "timeSeriesData": [
-    { "date": "Apr 13, 2025", "value": 23 },
-    { "date": "Apr 20, 2025", "value": 24 }
-  ],
-  "relatedQueries": [...],
-  "risingTopics": [...]
-}`}</pre>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-2xl font-bold mb-4">Piping</h3>
-                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
-                    <p>$ ./trends "python" | jq '.timeSeriesData'</p>
-                    <p>$ ./trends "golang" --csv {'>'} golang.csv</p>
-                    <p>$ for q in python golang rust; do ./trends "$q" {'>'} $q.json; done</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Requirements */}
-          <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-4xl font-bold mb-12">Requirements</h2>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="p-6 bg-white dark:bg-gray-800 rounded-xl">
-                  <h3 className="text-xl font-bold mb-4">Software</h3>
-                  <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                    <li>✓ Node.js 14+</li>
-                    <li>✓ npm or yarn</li>
-                    <li>✓ Playwright</li>
-                  </ul>
-                </div>
-                <div className="p-6 bg-white dark:bg-gray-800 rounded-xl">
-                  <h3 className="text-xl font-bold mb-4">System</h3>
-                  <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                    <li>✓ Linux, macOS, or Windows</li>
-                    <li>✓ 500MB+ disk space</li>
-                    <li>✓ Internet connection</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer className="border-t border-gray-200 dark:border-gray-800 py-8 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center">
-              <p className="text-gray-600 dark:text-gray-400 text-sm">© 2026 AnEntrypoint. MIT License.</p>
-              <div className="flex gap-6 mt-4 sm:mt-0">
-                <a href="https://github.com/AnEntrypoint/trends-cli" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">GitHub</a>
-                <a href="https://npmjs.com/package/trends-cli" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">npm</a>
-              </div>
-            </div>
-          </footer>
+        <div className="text-center mt-8 mb-4 space-y-2">
+          <div>
+            <a href="https://github.com/AnEntrypoint/trends-cli" className="text-[#7aa2f7] hover:text-[#bb9af7] transition-colors">
+              {'['} GitHub {']'}
+            </a>
+            <span className="text-[#565f89] mx-4">{'│'}</span>
+            <span className="text-[#565f89]">MIT License</span>
+            <span className="text-[#565f89] mx-4">{'│'}</span>
+            <span className="text-[#565f89]">AnEntrypoint</span>
+          </div>
+          <div className="text-[#565f89] text-xs cursor-blink">
+            <span className="text-[#9ece6a]">$ </span>_
+          </div>
         </div>
       </div>
     </>
