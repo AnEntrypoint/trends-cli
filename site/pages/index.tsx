@@ -189,8 +189,8 @@ export default function Home() {
                   <h3 className="text-2xl font-bold mb-4">Piping</h3>
                   <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
                     <p>$ ./trends "python" | jq '.timeSeriesData'</p>
-                    <p>$ ./trends "golang" --csv > golang.csv</p>
-                    <p>$ for q in python golang rust; do ./trends "$q" > $q.json; done</p>
+                    <p>$ ./trends "golang" --csv {'>'} golang.csv</p>
+                    <p>$ for q in python golang rust; do ./trends "$q" {'>'} $q.json; done</p>
                   </div>
                 </div>
               </div>
