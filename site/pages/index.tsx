@@ -143,15 +143,26 @@ export default function Home() {
               <div className="space-y-8">
                 <div>
                   <h3 className="text-2xl font-bold mb-4">Installation</h3>
-                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm overflow-x-auto">
-                    <p>$ npm install playwright</p>
+                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
+                    <p>$ npm install -g @remorses/playwriter</p>
+                    <p>$ git clone https://github.com/AnEntrypoint/trends-cli.git</p>
+                    <p>$ cd trends-cli && chmod +x trends</p>
                   </div>
                 </div>
 
                 <div>
                   <h3 className="text-2xl font-bold mb-4">Basic Usage</h3>
                   <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm overflow-x-auto">
-                    <p>$ node trends "artificial intelligence"</p>
+                    <p>$ ./trends "artificial intelligence"</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-2xl font-bold mb-4">With Options</h3>
+                  <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
+                    <p>$ ./trends "python" --geo US</p>
+                    <p>$ ./trends "golang" --time "today 12-m" --csv</p>
+                    <p>$ ./trends "python,golang,rust"</p>
                   </div>
                 </div>
 
@@ -161,22 +172,25 @@ export default function Home() {
                     <pre>{`{
   "query": "artificial intelligence",
   "success": true,
+  "geo": "worldwide",
   "url": "https://trends.google.com/trends/explore?q=...",
   "timestamp": "2026-04-15T...",
-  "data": [
+  "timeSeriesData": [
     { "date": "Apr 13, 2025", "value": 23 },
     { "date": "Apr 20, 2025", "value": 24 }
-  ]
+  ],
+  "relatedQueries": [...],
+  "risingTopics": [...]
 }`}</pre>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-bold mb-4">Examples</h3>
+                  <h3 className="text-2xl font-bold mb-4">Piping</h3>
                   <div className="bg-gray-900 dark:bg-gray-950 text-green-400 p-6 rounded-lg font-mono text-sm space-y-2">
-                    <p>$ node trends "python"</p>
-                    <p>$ node trends "machine learning" | jq '.data'</p>
-                    <p>$ for q in python golang rust; do node trends "$q" > $q.json; done</p>
+                    <p>$ ./trends "python" | jq '.timeSeriesData'</p>
+                    <p>$ ./trends "golang" --csv > golang.csv</p>
+                    <p>$ for q in python golang rust; do ./trends "$q" > $q.json; done</p>
                   </div>
                 </div>
               </div>

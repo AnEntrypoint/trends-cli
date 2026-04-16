@@ -24,9 +24,20 @@ Open Chrome/Brave/Edge with the playwriter extension, navigate to any page.
 **Terminal 3 - Run queries:**
 ```bash
 ./trends "artificial intelligence"
-./trends "python"
-./trends "machine learning"
+./trends "python" --geo US
+./trends "golang" --time "today 12-m"
+./trends "machine learning" --csv
+./trends "python,golang,rust"
 ```
+
+## Options
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--geo <code>` | Region filter | `--geo US`, `--geo DE` |
+| `--time <range>` | Time range | `--time "today 12-m"` |
+| `--csv` | CSV output instead of JSON | `--csv` |
+| `-h, --help` | Show help | |
 
 ## Output
 
@@ -34,11 +45,18 @@ Open Chrome/Brave/Edge with the playwriter extension, navigate to any page.
 {
   "query": "artificial intelligence",
   "success": true,
+  "geo": "worldwide",
   "url": "https://trends.google.com/trends/explore?q=...",
   "timestamp": "2026-04-15T...",
   "timeSeriesData": [
     { "date": "Apr 13, 2025", "value": 23 },
     { "date": "Apr 20, 2025", "value": 24 }
+  ],
+  "relatedQueries": [
+    { "label": "chatgpt", "value": "100" }
+  ],
+  "risingTopics": [
+    { "label": "Claude AI", "value": "Breakout" }
   ],
   "dataPoints": 52,
   "attemptsRequired": 1
@@ -47,10 +65,10 @@ Open Chrome/Brave/Edge with the playwriter extension, navigate to any page.
 
 ## How It Works
 
-1. CLI spawns temporary script and executes via `playwriter` command
-2. Playwriter navigates to trends.google.com
-3. Extracts time-series data from chart table
-4. Returns JSON with results
+1. CLI creates a playwriter session and builds eval script
+2. Playwriter navigates to trends.google.com with query parameters
+3. Extracts time-series data, related queries, and rising topics from page
+4. Returns structured JSON (or CSV with `--csv`)
 
 ## Requirements
 

@@ -1,0 +1,23 @@
+{
+  "name": "trends-cli",
+  "version": "1.0.0",
+  "description": "Atomic CLI for Google Trends lookups via playwriter",
+  "main": "playwriter-trends.js",
+  "bin": {
+    "trends": "./trends"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnEntrypoint/trends-cli"
+  },
+  "keywords": [
+    "google-trends",
+    "trends",
+    "cli",
+    "playwriter"
+  ]
+}

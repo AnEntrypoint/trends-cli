@@ -3,14 +3,54 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const query = process.argv[2];
+const flags = {
+  geo: '',
+  time: '',
+  csv: false
+};
+
+const positional = [];
+
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  if (arg === '--geo' && process.argv[i + 1]) {
+    flags.geo = process.argv[++i];
+  } else if (arg === '--time' && process.argv[i + 1]) {
+    flags.time = process.argv[++i];
+  } else if (arg === '--csv') {
+    flags.csv = true;
+  } else if (arg === '--help' || arg === '-h') {
+    process.stdout.write([
+      'Usage: trends <query> [options]',
+      '',
+      'Options:',
+      '  --geo <code>   Region code (e.g., US, GB, DE)',
+      '  --time <range> Time range (e.g., "today 12-m", "2024-01-01 2024-12-31")',
+      '  --csv          Output as CSV instead of JSON',
+      '  -h, --help     Show this help',
+      '',
+      'Examples:',
+      '  trends "artificial intelligence"',
+      '  trends "python" --geo US',
+      '  trends "golang" --time "today 12-m" --csv',
+      '  trends "python,golang,rust"',
+      ''
+    ].join('\n'));
+    process.exit(0);
+  } else {
+    positional.push(arg);
+  }
+}
+
+const query = positional[0];
 if (!query) {
-  console.error('Usage: trends <query>');
-  console.error('Example: trends "artificial intelligence"');
-  console.error('');
-  console.error('Requirements:');
-  console.error('  - playwriter CLI installed (npm install -g @remorses/playwriter)');
-  console.error('  - Browser window open with playwriter extension active');
+  process.stderr.write('Usage: trends <query> [--geo CODE] [--time RANGE] [--csv]\n');
+  process.stderr.write('Run trends --help for more info\n');
+  process.exit(1);
+}
+
+if (query.length > 500) {
+  process.stderr.write('Error: query too long (max 500 characters)\n');
   process.exit(1);
 }
 
@@ -20,12 +60,11 @@ const tmpDir = require('os').tmpdir();
 const tempFile = path.join(tmpDir, `trends-${Date.now()}.js`);
 
 if (!fs.existsSync(modulePath)) {
-  console.error(`Error: playwriter-trends.js not found at ${modulePath}`);
+  process.stderr.write(`Error: playwriter-trends.js not found at ${modulePath}\n`);
   process.exit(1);
 }
 
 try {
-  // Step 1: Create a new playwriter session
   let sessionId;
   try {
     const sessionOutput = execSync('playwriter session new', {
@@ -33,85 +72,84 @@ try {
       stdio: 'pipe'
     }).trim();
 
-    // Extract session ID from output like "Session 57 created. Use with: playwriter -s 57 -e "...""
     const match = sessionOutput.match(/Session\s+(\d+)\s+created/);
     if (!match) {
       throw new Error('Could not parse session ID from output: ' + sessionOutput);
     }
     sessionId = match[1];
   } catch (err) {
-    console.error('Error: Could not create playwriter session');
-    console.error('Make sure:');
-    console.error('  1. playwriter serve is running on your machine');
-    console.error('  2. Browser window is open with playwriter extension active');
+    process.stderr.write('Error: Could not create playwriter session\n');
+    process.stderr.write('Make sure:\n');
+    process.stderr.write('  1. playwriter serve is running\n');
+    process.stderr.write('  2. Browser with playwriter extension is active\n');
     process.exit(1);
   }
 
-  // Step 2: Build and write the eval code to a temporary file
-  const evalCode = `
-const { fetchTrendsData } = require('${modulePath.replace(/\\/g, '\\\\')}');
-const result = await fetchTrendsData('${query.replace(/'/g, "\\'")}', page);
-console.log(JSON.stringify(result, null, 2));
-`;
+  const safeQuery = query.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const evalCode = [
+    `const { fetchTrendsData } = require('${modulePath.replace(/\\/g, '\\\\')}');`,
+    `const result = await fetchTrendsData('${safeQuery}', page, {`,
+    `  geo: '${flags.geo}',`,
+    `  time: '${flags.time}'`,
+    `});`,
+    `console.log(JSON.stringify(result));`
+  ].join('\n');
 
   fs.writeFileSync(tempFile, evalCode, 'utf8');
 
-  // Step 3: Execute the code via playwriter using the file
-  // Read the code from file to pass via -e to avoid shell parsing issues
   const fileContent = fs.readFileSync(tempFile, 'utf8');
-  const output = execSync(`playwriter -s ${sessionId} -e "${fileContent.replace(/"/g, '\\"').replace(/\$/g, '\\$')}"`, {
+  const escaped = fileContent.replace(/"/g, '\\"').replace(/\$/g, '\\$');
+  const output = execSync(`playwriter -s ${sessionId} -e "${escaped}"`, {
     encoding: 'utf8',
     stdio: 'pipe',
     shell: true
   });
 
-  // Step 4: Parse output for JSON
-  // Playwriter wraps console output as "[log] <output>"
   const lines = output.split('\n');
   let jsonOutput = '';
 
   for (const line of lines) {
-    // Look for lines with [log] prefix or direct JSON
     const trimmed = line.trim();
     if (trimmed.startsWith('[log] {')) {
-      // Extract JSON from "[log] {...}"
-      jsonOutput = trimmed.substring(6); // Remove "[log] "
+      jsonOutput = trimmed.substring(6);
       break;
-    } else if (trimmed.startsWith('{')) {
-      // Direct JSON line
+    }
+    if (trimmed.startsWith('{')) {
       jsonOutput = trimmed;
       break;
     }
   }
 
-  if (jsonOutput.trim()) {
-    try {
-      const result = JSON.parse(jsonOutput);
-      console.log(JSON.stringify(result, null, 2));
-    } catch (parseErr) {
-      console.error('Error: Could not parse JSON output');
-      console.error('Raw output:', output);
-      process.exit(1);
-    }
-  } else {
-    console.error('Error: No JSON output from playwriter');
-    console.error('Raw output:', output);
+  if (!jsonOutput.trim()) {
+    process.stderr.write('Error: No JSON output from playwriter\n');
+    process.stderr.write('Raw output: ' + output + '\n');
     process.exit(1);
   }
+
+  const result = JSON.parse(jsonOutput);
+
+  if (flags.csv) {
+    process.stdout.write('date,value\n');
+    result.timeSeriesData.forEach(row => {
+      const date = row.date.includes(',') ? `"${row.date}"` : row.date;
+      process.stdout.write(`${date},${row.value}\n`);
+    });
+  } else {
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  }
 } catch (err) {
-  console.error('Playwriter error:', err.message);
-  console.error('Make sure:');
-  console.error('  1. playwriter serve is running: playwriter serve');
-  console.error('  2. Browser window is open with playwriter extension active');
-  console.error('  3. playwriter-trends.js is in the same directory');
+  if (err.message && err.message.includes('Unexpected token')) {
+    process.stderr.write('Error: Could not parse response from Google Trends\n');
+  } else {
+    process.stderr.write('Playwriter error: ' + err.message + '\n');
+  }
+  process.stderr.write('Make sure:\n');
+  process.stderr.write('  1. playwriter serve is running\n');
+  process.stderr.write('  2. Browser with playwriter extension is active\n');
+  process.stderr.write('  3. playwriter-trends.js is in the same directory\n');
   process.exit(1);
 } finally {
-  // Clean up temporary file
   try {
-    if (fs.existsSync(tempFile)) {
-      fs.unlinkSync(tempFile);
-    }
-  } catch (cleanupErr) {
-    // Silently ignore cleanup errors
-  }
+    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+  } catch (_) {}
 }

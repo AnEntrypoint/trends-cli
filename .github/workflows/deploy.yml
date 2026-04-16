@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: site-build
-          path: site/.next
+          path: site/out
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
