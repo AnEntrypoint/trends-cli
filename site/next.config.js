@@ -5,8 +5,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  basePath: '',
-  trailingSlash: false,
+  basePath: '/trends-cli',
+  trailingSlash: true,
 };
 
 module.exports = nextConfig;
